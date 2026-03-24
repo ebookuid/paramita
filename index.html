@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PARAMITA - Distribution Monitoring System</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #2d3748; background: #f0f2f5; }
+
+/* ===== LOGIN PAGE ===== */
+#loginPage {
+  min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #f0f2f5; padding: 2rem;
+}
+.login-card {
+  background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+  width: 100%; max-width: 420px; overflow: hidden;
+}
+.login-header { background: #1a6bb5; padding: 2rem 2rem 1.5rem; text-align: center; }
+.login-header .logo-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 0.5rem; }
+.login-header .logo-box { width: 38px; height: 38px; background: #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.login-header h1 { font-size: 20px; font-weight: 700; color: #fff; letter-spacing: 0.5px; }
+.login-header p { font-size: 12px; color: rgba(255,255,255,0.75); margin-top: 2px; }
+.login-body { padding: 2rem; }
+.login-body h2 { font-size: 16px; font-weight: 600; color: #1a2a3a; margin-bottom: 4px; }
+.login-body .sub { font-size: 12px; color: #7a8fa6; margin-bottom: 1.5rem; }
+.form-group { margin-bottom: 1rem; }
+.form-group label { display: block; font-size: 12px; font-weight: 600; color: #4a5568; margin-bottom: 5px; }
+.input-wrap { position: relative; display: flex; align-items: center; }
+.input-wrap .fi { position: absolute; left: 10px; width: 16px; height: 16px; color: #a0aec0; pointer-events: none; }
+.input-wrap input {
+  width: 100%; border: 1px solid #d1d9e6; border-radius: 7px;
+  padding: 9px 12px 9px 34px; font-size: 13px; color: #2d3748;
+  outline: none; transition: border 0.2s; background: #f8fafc;
+}
+.input-wrap input:focus { border-color: #1a6bb5; background: #fff; box-shadow: 0 0 0 3px rgba(26,107,181,0.10); }
+.eye-btn { position: absolute; right: 10px; background: none; border: none; cursor: pointer; padding: 0; color: #a0aec0; }
+.eye-btn:hover { color: #1a6bb5; }
+.row-flex { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+.remember { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #4a5568; cursor: pointer; }
+.remember input[type=checkbox] { accent-color: #1a6bb5; }
+.forgot { font-size: 12px; color: #1a6bb5; text-decoration: none; }
+.forgot:hover { text-decoration: underline; }
+.btn-login {
+  width: 100%; background: #1a6bb5; color: #fff; border: none; border-radius: 7px;
+  padding: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.btn-login:hover { background: #155a9e; }
+.btn-login:active { transform: scale(0.98); }
+.semester-note {
+  background: #eef6ff; border: 1px solid #bee3f8; border-radius: 7px;
+  padding: 10px 12px; display: flex; align-items: flex-start; gap: 8px; margin-top: 1.25rem;
+}
+.semester-note p { font-size: 11px; color: #2b6cb0; line-height: 1.5; }
+.login-footer { background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 0.85rem 2rem; text-align: center; font-size: 11px; color: #a0aec0; }
+.login-footer strong { color: #4a5568; }
+.msg-error {
+  background: #fff5f5; border: 1px solid #fed7d7; border-radius: 6px;
+  padding: 8px 12px; font-size: 12px; color: #c53030; margin-bottom: 1rem;
+  display: none; align-items: center; gap: 6px;
+}
+.msg-error.show { display: flex; }
+.loading-dots { display: none; }
+.loading-dots span { display: inline-block; width: 6px; height: 6px; background: #fff; border-radius: 50%; margin: 0 2px; animation: blink 1.2s infinite; }
+.loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+.loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes blink { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
+
+/* ===== DASHBOARD APP ===== */
+#dashboardApp { display: none; flex-direction: column; min-height: 100vh; }
+
+/* TOPBAR */
+.topbar {
+  height: 48px; background: #fff; border-bottom: 1px solid #e2e8f0;
+  display: flex; align-items: center; padding: 0 16px; gap: 10px;
+  position: sticky; top: 0; z-index: 100;
+}
+.topbar-left { display: flex; align-items: center; gap: 8px; min-width: 210px; }
+.brand { font-weight: 700; font-size: 15px; color: #1a6bb5; letter-spacing: 0.5px; }
+.semester-badge { background: #eef6ff; color: #1a6bb5; border: 1px solid #bee3f8; border-radius: 5px; padding: 2px 10px; font-size: 11px; font-weight: 600; }
+.topbar-center { flex: 1; }
+.page-title-top { font-size: 13px; font-weight: 600; color: #4a5568; }
+.topbar-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.icon-btn { width: 30px; height: 30px; border-radius: 6px; border: 1px solid #e2e8f0; background: #f8fafc; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+.icon-btn:hover { background: #eef6ff; }
+.admin-info { display: flex; align-items: center; gap: 6px; }
+.avatar { width: 30px; height: 30px; border-radius: 50%; background: #1a6bb5; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; }
+.aname { font-size: 12px; font-weight: 600; color: #2d3748; }
+.arole { font-size: 10px; color: #a0aec0; }
+.online-dot { width: 8px; height: 8px; border-radius: 50%; background: #38a169; border: 2px solid #fff; position: absolute; bottom: 0; right: 0; }
+
+/* LAYOUT */
+.layout { display: flex; flex: 1; }
+
+/* SIDEBAR */
+.sidebar {
+  width: 210px; background: #fff; border-right: 1px solid #e2e8f0;
+  display: flex; flex-direction: column; position: sticky; top: 48px;
+  height: calc(100vh - 48px); overflow-y: auto; flex-shrink: 0;
+}
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 4px; }
+.menu-section { padding: 12px 10px 4px; font-size: 10px; font-weight: 700; color: #a0aec0; letter-spacing: 1px; text-transform: uppercase; }
+.menu-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 14px; margin: 1px 8px; border-radius: 7px;
+  cursor: pointer; font-size: 12px; color: #4a5568; transition: all 0.15s; user-select: none;
+}
+.menu-item:hover { background: #eef6ff; color: #1a6bb5; }
+.menu-item.active { background: #1a6bb5; color: #fff; font-weight: 600; }
+.menu-item svg { width: 15px; height: 15px; stroke: #718096; flex-shrink: 0; fill: none; stroke-width: 2; }
+.menu-item.active svg { stroke: #fff; }
+.menu-item:hover svg { stroke: #1a6bb5; }
+.menu-item.active:hover svg { stroke: #fff; }
+.menu-item.sub { padding-left: 34px; }
+
+/* MAIN CONTENT */
+.main { flex: 1; overflow: auto; }
+.page { display: none; padding: 20px; }
+.page.active { display: block; }
+.page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.page-header h1 { font-size: 20px; font-weight: 700; color: #1a2a3a; }
+.breadcrumb { font-size: 11px; color: #a0aec0; }
+.page-sub { font-size: 12px; color: #718096; margin-bottom: 8px; }
+.semester-select { border: 1px solid #d1d9e6; border-radius: 6px; padding: 6px 28px 6px 10px; font-size: 12px; color: #2d3748; background: #fff; outline: none; cursor: pointer; margin-bottom: 16px; }
+
+/* STAT CARDS */
+.stat-row { display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.stat-card { flex: 1; min-width: 150px; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; }
+.stat-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.stat-icon svg { width: 18px; height: 18px; fill: none; stroke-width: 2; }
+.si-blue { background: #eef6ff; } .si-blue svg { stroke: #1a6bb5; }
+.si-red { background: #fff5f5; } .si-red svg { stroke: #e53e3e; }
+.si-teal { background: #e6fffa; } .si-teal svg { stroke: #2c7a7b; }
+.si-green { background: #f0fff4; } .si-green svg { stroke: #276749; }
+.si-orange { background: #fffaf0; } .si-orange svg { stroke: #c05621; }
+.si-purple { background: #faf5ff; } .si-purple svg { stroke: #6b46c1; }
+.stat-info .label { font-size: 11px; color: #718096; }
+.stat-info .value { font-size: 20px; font-weight: 700; color: #1a2a3a; line-height: 1.2; }
+.stat-info .value.small { font-size: 14px; }
+
+/* CHART AREA */
+.chart-grid { display: flex; gap: 14px; margin-bottom: 14px; flex-wrap: wrap; }
+.chart-box { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px; }
+.chart-box.wide { flex: 2; min-width: 280px; }
+.chart-box.narrow { flex: 1; min-width: 200px; }
+.chart-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.chart-title { font-size: 13px; font-weight: 600; color: #2d3748; }
+.chart-sub { font-size: 10px; color: #a0aec0; margin-bottom: 10px; }
+.chart-btn { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 5px; padding: 2px 8px; font-size: 11px; color: #718096; cursor: pointer; }
+.zoom-btns { display: flex; gap: 4px; margin-bottom: 10px; flex-wrap: wrap; }
+.zoom-btn { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 4px; padding: 2px 8px; font-size: 10px; color: #718096; cursor: pointer; }
+.zoom-btn.active { background: #1a6bb5; color: #fff; border-color: #1a6bb5; }
+
+/* PIE LEGEND */
+.pie-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.pie-legend { display: flex; flex-direction: column; gap: 6px; }
+.pie-legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #4a5568; }
+.pie-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+/* BOTTOM STATS */
+.bottom-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.bottom-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 11px 14px; display: flex; align-items: center; gap: 10px; flex: 1; min-width: 120px; }
+.bc-icon { width: 32px; height: 32px; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.bc-icon svg { width: 16px; height: 16px; fill: none; stroke-width: 2; }
+.bc-blue { background: #eef6ff; } .bc-blue svg { stroke: #1a6bb5; }
+.bc-orange { background: #fffaf0; } .bc-orange svg { stroke: #c05621; }
+.bc-green { background: #f0fff4; } .bc-green svg { stroke: #276749; }
+.bc-teal { background: #e6fffa; } .bc-teal svg { stroke: #2c7a7b; }
+.bc-red { background: #fff5f5; } .bc-red svg { stroke: #e53e3e; }
+.bc-purple { background: #faf5ff; } .bc-purple svg { stroke: #6b46c1; }
+.bc-label { font-size: 10px; color: #718096; }
+.bc-val { font-size: 16px; font-weight: 700; color: #1a2a3a; }
+
+/* SECTION HEADER */
+.section-header { font-size: 13px; font-weight: 600; color: #2d3748; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #e2e8f0; }
+
+/* TABLE */
+.data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.data-table th { background: #f8fafc; padding: 8px 10px; text-align: left; font-weight: 600; color: #4a5568; border-bottom: 1px solid #e2e8f0; }
+.data-table td { padding: 8px 10px; border-bottom: 1px solid #f0f2f5; color: #2d3748; }
+.data-table tr:hover td { background: #f8fafc; }
+.badge { display: inline-block; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: 600; }
+.badge-blue { background: #eef6ff; color: #1a6bb5; }
+.badge-green { background: #f0fff4; color: #276749; }
+.badge-red { background: #fff5f5; color: #c53030; }
+.badge-orange { background: #fffaf0; color: #c05621; }
+
+/* BUTTONS */
+.btn-primary { background: #1a6bb5; color: #fff; border: none; border-radius: 6px; padding: 6px 16px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.btn-primary:hover { background: #155a9e; }
+.btn-reset { border: 1px solid #d1d9e6; background: #fff; border-radius: 6px; padding: 5px 14px; font-size: 12px; cursor: pointer; }
+.btn-excel { background: #217346; color: #fff; border: none; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.total-badge { background: #1a6bb5; color: #fff; border-radius: 5px; padding: 4px 14px; font-size: 12px; font-weight: 700; display: inline-block; margin-bottom: 10px; }
+
+/* VENDOR LOGO */
+.vendor-logo { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; }
+.vl-circle { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; flex-shrink: 0; }
+
+/* TRACKING */
+.tracking-form { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; max-width: 540px; }
+.tracking-option { padding: 7px 12px; font-size: 11px; color: #4a5568; border-bottom: 1px solid #f0f2f5; cursor: pointer; }
+.tracking-option:hover { background: #eef6ff; color: #1a6bb5; }
+
+/* FILTER ROW */
+.filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
+.filter-row select, .filter-row input { border: 1px solid #d1d9e6; border-radius: 6px; padding: 5px 10px; font-size: 12px; outline: none; }
+
+canvas { max-width: 100%; }
+</style>
+</head>
+<body>
+
+<!-- ===================== LOGIN PAGE ===================== -->
+<div id="loginPage">
+  <div class="login-card">
+    <div class="login-header">
+      <div class="logo-row">
+        <div class="logo-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#1a6bb5" stroke-width="2" width="22" height="22">
+            <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+        </div>
+        <h1>PARAMITA</h1>
+      </div>
+      <p>Distribution Monitoring System</p>
+    </div>
+    <div class="login-body">
+      <h2>Selamat Datang</h2>
+      <p class="sub">Masuk ke akun Anda untuk melanjutkan</p>
+      <div class="msg-error" id="errMsg">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span id="errText">Username atau password salah.</span>
+      </div>
+      <div class="form-group">
+        <label>Username</label>
+        <div class="input-wrap">
+          <svg class="fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <input type="text" id="uname" placeholder="Masukkan username" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('pass').focus()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <div class="input-wrap">
+          <svg class="fi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <input type="password" id="pass" placeholder="Masukkan password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+          <button class="eye-btn" id="eyeBtn" type="button" onclick="togglePass()">
+            <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="row-flex">
+        <label class="remember"><input type="checkbox" id="remMe"> Ingat saya</label>
+        <a href="#" class="forgot">Lupa password?</a>
+      </div>
+      <button class="btn-login" id="loginBtn" onclick="doLogin()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="17" height="17"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        <span id="btnText">Masuk</span>
+        <span class="loading-dots" id="dots"><span></span><span></span><span></span></span>
+      </button>
+      <div class="semester-note">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#1a6bb5" stroke-width="2" width="15" height="15" style="flex-shrink:0;margin-top:1px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        <p>Sistem ini digunakan untuk monitoring distribusi paket mahasiswa. Gunakan akun yang telah diberikan oleh administrator.</p>
+      </div>
+    </div>
+    <div class="login-footer">&copy; 2025 <strong>Universitas Terbuka</strong> &mdash; Paramita Distribution System v2.0</div>
+  </div>
+</div>
+
+<!-- ===================== DASHBOARD APP ===================== -->
+<div id="dashboardApp">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-left">
+      <div style="width:28px;height:28px;background:#1a6bb5;border-radius:6px;display:flex;align-items:center;justify-content:center;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" width="16" height="16"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      </div>
+      <span class="brand">PARAMITA</span>
+      <span class="semester-badge">Semester 2025 Genap</span>
+    </div>
+    <div class="topbar-center">
+      <span class="page-title-top" id="topTitle">Dashboard</span>
+    </div>
+    <div class="topbar-right">
+      <div class="icon-btn" title="Notifikasi">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#4a5568" stroke-width="2" width="15" height="15"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </div>
+      <div class="icon-btn" title="Logout" onclick="doLogout()" style="cursor:pointer;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#e53e3e" stroke-width="2" width="15" height="15"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </div>
+      <div class="admin-info">
+        <div style="position:relative;">
+          <div class="avatar">AP</div>
+          <div class="online-dot"></div>
+        </div>
+        <div>
+          <div class="aname">Admin Pustaka</div>
+          <div class="arole">Online</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="menu-section">Menu</div>
+      <div class="menu-item active" onclick="showPage('dashboard',this,'Dashboard')">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </div>
+      <div class="menu-item" onclick="showPage('mon-paket',this,'Monitoring Stock Paket')">
+        <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+        Monitoring Stock Paket
+      </div>
+      <div class="menu-item" onclick="showPage('mon-item',this,'Monitoring Stock Item')">
+        <svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Monitoring Stock Item
+      </div>
+      <div class="menu-item" onclick="showPage('dist-map',this,'Distribution Map')">
+        <svg viewBox="0 0 24 24"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>
+        Distribution Map
+      </div>
+      <div class="menu-item sub" onclick="showPage('dist-vendor',this,'Distribution Map By Vendor')">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        Distribution Map By Vendor
+      </div>
+      <div class="menu-item" onclick="showPage('delivery',this,'Delivery Analysis')">
+        <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Delivery Analysis
+      </div>
+      <div class="menu-item" onclick="showPage('reason',this,'Reason Monitoring')">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        Reason Monitoring
+      </div>
+      <div class="menu-item" onclick="showPage('sla',this,'Analisa SLA')">
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Analisa SLA
+      </div>
+      <div class="menu-section">Transaction</div>
+      <div class="menu-item" onclick="showPage('client-order',this,'Client Order')">
+        <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        Client Order
+      </div>
+      <div class="menu-item" onclick="showPage('lead-time',this,'Lead Time')">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        Lead Time
+      </div>
+      <div class="menu-item" onclick="showPage('tracking',this,'Tracking Delivery')">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+        Tracking Delivery
+      </div>
+      <div class="menu-section">Setting</div>
+      <div class="menu-item" onclick="showPage('history',this,'History')">
+        <svg viewBox="0 0 24 24"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><line x1="12" y1="7" x2="12" y2="12"/><line x1="12" y1="12" x2="15" y2="15"/></svg>
+        History
+      </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div class="main">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="page-header"><h1>Dashboard</h1><span class="breadcrumb">Dashboard</span></div>
+        <div class="page-sub">Semester</div>
+        <select class="semester-select"><option>2025 Genap</option><option>2025 Ganjil</option><option>2024 Genap</option><option>2024 Ganjil</option><option>2023 Genap</option></select>
+        <div class="stat-row">
+          <div class="stat-card">
+            <div class="stat-icon si-blue"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+            <div class="stat-info"><div class="label">Do Today</div><div class="value">485</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon si-red"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>
+            <div class="stat-info"><div class="label">Do Waiting</div><div class="value">0</div></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon si-teal"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-.49-5"/></svg></div>
+            <div class="stat-info"><div class="label">Do In Progress</div><div class="value">0</div></div>
+          </div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-card">
+            <div class="stat-icon si-green"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
+            <div class="stat-info"><div class="label">Do Done</div><div class="value">1</div></div>
+          </div>
+          <div class="stat-card" style="flex:2;">
+            <div class="stat-icon si-purple"><svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+            <div class="stat-info"><div class="label">Total Order</div><div class="value">2</div></div>
+          </div>
+        </div>
+        <div class="chart-grid">
+          <div class="chart-box wide">
+            <div class="chart-header"><span class="chart-title">DO By Date</span><button class="chart-btn">&#9776;</button></div>
+            <div class="zoom-btns">
+              <button class="zoom-btn">1w</button><button class="zoom-btn">1m</button>
+              <button class="zoom-btn">3m</button><button class="zoom-btn">6m</button>
+              <button class="zoom-btn active">All</button>
+            </div>
+            <canvas id="doChart" height="180"></canvas>
+          </div>
+          <div class="chart-box narrow">
+            <div class="chart-header"><span class="chart-title" style="font-size:11px;">Persentase Paket BA Terkirim</span><button class="chart-btn">&#9776;</button></div>
+            <div style="margin-top:10px;" class="pie-wrap">
+              <div style="width:110px;height:110px;border-radius:50%;background:conic-gradient(#1a6bb5 0% 62.3%, #e2e8f0 62.3% 74.9%, #f6ad55 74.9% 100%);"></div>
+              <div class="pie-legend">
+                <div class="pie-legend-item"><div class="pie-dot" style="background:#1a6bb5;"></div>Dikirim Ke UT: 62.3%</div>
+                <div class="pie-legend-item"><div class="pie-dot" style="background:#e2e8f0;border:1px solid #d1d9e6;"></div>Belum Terkirim: 37.2%</div>
+                <div class="pie-legend-item"><div class="pie-dot" style="background:#f6ad55;"></div>Terkirim Ke Mhs: 62.7%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="bottom-row">
+          <div class="bottom-card"><div class="bc-icon bc-blue"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><div><div class="bc-label">Waitlist Today</div><div class="bc-val">485</div></div></div>
+          <div class="bottom-card"><div class="bc-icon bc-orange"><svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div><div><div class="bc-label">On Delivery</div><div class="bc-val">515</div></div></div>
+          <div class="bottom-card"><div class="bc-icon bc-green"><svg viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4"/></svg></div><div><div class="bc-label">Retur</div><div class="bc-val">0</div></div></div>
+          <div class="bottom-card"><div class="bc-icon bc-teal"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><div><div class="bc-label">Delivered To Mhs</div><div class="bc-val">0</div></div></div>
+          <div class="bottom-card"><div class="bc-icon bc-red"><svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/></svg></div><div><div class="bc-label">Total Delivered</div><div class="bc-val">2</div></div></div>
+          <div class="bottom-card"><div class="bc-icon bc-purple"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><div><div class="bc-label">Total Waitlist</div><div class="bc-val">485</div></div></div>
+        </div>
+      </div>
+
+      <!-- MONITORING STOCK PAKET -->
+      <div class="page" id="page-mon-paket">
+        <div class="page-header"><h1>Monitoring Stock Paket</h1><span class="breadcrumb">Monitoring Stock Paket</span></div>
+        <div class="page-sub">Semester</div>
+        <select class="semester-select"><option>2025 Genap</option><option>2025 Ganjil</option><option>2024 Genap</option><option>2024 Ganjil</option><option>2023 Genap</option></select>
+        <div class="section-header">Grafik Stock Per Paket BA</div>
+        <div class="chart-grid">
+          <div class="chart-box wide">
+            <div class="chart-header"><span class="chart-title" style="font-size:12px;">Jumlah Stok On Hand Akumulasi Per Hari Ini</span><button class="chart-btn">&#9776;</button></div>
+            <div class="chart-sub">Data yang ditaprikan dari realtime dan database temporer</div>
+            <canvas id="stockChart" height="160"></canvas>
+          </div>
+          <div class="chart-box narrow">
+            <div class="chart-header"><span class="chart-title" style="font-size:11px;">Perbandingan Data Do Dan Data Ongoing Bayar</span><button class="chart-btn">&#9776;</button></div>
+            <div class="chart-sub">Data yang ditaprikan dari realtime dan database temporer</div>
+            <canvas id="compareChart" height="160"></canvas>
+          </div>
+        </div>
+        <div class="section-header">List Stock By Detail</div>
+        <div class="filter-row">
+          <select><option>Semua Nama Paket</option></select>
+          <select><option>Semua Kode Paket</option></select>
+          <select><option>Pilih data stock di samping kiri dahulu...</option></select>
+        </div>
+        <div class="total-badge">JUMLAH STOCK TOTAL &nbsp;&nbsp; 30</div>
+        <table class="data-table">
+          <thead><tr><th>Nama Paket</th><th>Kode</th><th>Stok</th></tr></thead>
+          <tbody>
+            <tr><td>PAKET BA TA ILMU ADMINISTRASI BISNIS SEMESTER 02 VERS 004</td><td>PET001_20191_20_LDK4 I Sesi 14</td><td>14</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- MONITORING STOCK ITEM -->
+      <div class="page" id="page-mon-item">
+        <div class="page-header"><h1>Monitoring Stock Item</h1><span class="breadcrumb">Monitoring Stock Item</span></div>
+        <select class="semester-select" style="margin-top:12px;"><option>All Bundling</option></select>
+        <div class="stat-card" style="max-width:220px;margin-bottom:16px;">
+          <div class="stat-icon si-blue"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg></div>
+          <div class="stat-info"><div class="label">Total Stock On Hand</div><div class="value">4,159</div></div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-header"><span class="chart-title" style="font-size:12px;">Jumlah Stock On Hand Item Akumulasi Per Hari Ini</span><button class="chart-btn">&#9776;</button></div>
+          <div class="chart-sub">Data yang ditaprikan dari realtime dan database temporer</div>
+          <canvas id="itemChart" height="200"></canvas>
+        </div>
+      </div>
+
+      <!-- DISTRIBUTION MAP -->
+      <div class="page" id="page-dist-map">
+        <div class="page-header"><h1>Distribution Map</h1><span class="breadcrumb">Distribution Map</span></div>
+        <div class="page-sub">Semester</div>
+        <select class="semester-select"><option>2025 Genap</option><option>2025 Ganjil</option><option>2024 Genap</option><option>2024 Ganjil</option><option>2023 Genap</option></select>
+        <div style="background:#dce8f0;border:1px solid #c4d8e8;border-radius:10px;height:320px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
+          <div style="text-align:center;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#1a6bb5" stroke-width="1.5" width="48" height="48"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+            <div style="font-size:13px;font-weight:600;color:#4a5568;margin-top:8px;">Peta Distribusi Indonesia</div>
+            <div style="font-size:11px;color:#718096;margin-top:4px;">Data sebaran pengiriman per provinsi</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px;">
+          <div class="chart-box" style="flex:1;"><div class="chart-title" style="font-size:13px;font-weight:600;">List Provinsi</div></div>
+          <div class="chart-box" style="flex:1;"><div class="chart-title" style="font-size:13px;font-weight:600;">List Kota</div></div>
+        </div>
+      </div>
+
+      <!-- DISTRIBUTION MAP BY VENDOR -->
+      <div class="page" id="page-dist-vendor">
+        <div class="page-header"><h1>Distribution Map By Vendor</h1><span class="breadcrumb">Distribution Map By Vendor</span></div>
+        <div class="page-sub">Semester</div>
+        <select class="semester-select"><option>2025 Genap</option><option>2025 Ganjil</option><option>2024 Genap</option><option>2024 Ganjil</option><option>2023 Genap</option></select>
+        <div class="chart-grid">
+          <div class="chart-box wide">
+            <div class="chart-header"><span class="chart-title">Data Pengiriman Dengan Vendor</span><button class="chart-btn">&#9776;</button></div>
+            <div class="chart-sub">Data yang ditaprikan dari realtime dan database temporer</div>
+            <canvas id="vendorChart" height="140"></canvas>
+            <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap;">
+              <span style="font-size:10px;display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#f6ad55;border-radius:2px;display:inline-block;"></span>LION PARCEL</span>
+              <span style="font-size:10px;display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#1a6bb5;border-radius:2px;display:inline-block;"></span>PT. FIRST LOGISTIC</span>
+              <span style="font-size:10px;display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#38a169;border-radius:2px;display:inline-block;"></span>INDAH LOGISTIK</span>
+              <span style="font-size:10px;display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#e53e3e;border-radius:2px;display:inline-block;"></span>PT. JNE</span>
+              <span style="font-size:10px;display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#805ad5;border-radius:2px;display:inline-block;"></span>POS LOGISTIC</span>
+            </div>
+          </div>
+          <div class="chart-box narrow" style="background:#dce8f0;display:flex;align-items:center;justify-content:center;">
+            <div style="text-align:center;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#1a6bb5" stroke-width="1.5" width="36" height="36"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              <div style="font-size:11px;color:#718096;margin-top:6px;">Peta Vendor</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DELIVERY ANALYSIS -->
+      <div class="page" id="page-delivery">
+        <div class="page-header"><h1>Delivery Analysis</h1><span class="breadcrumb">Delivery Analysis</span></div>
+        <div class="page-sub">Semester</div>
+        <select class="semester-select"><option>2025 Genap</option><option>2025 Ganjil</option><option>2024 Genap</option><option>2024 Ganjil</option><option>2023 Genap</option></select>
+        <div class="stat-card" style="max-width:220px;margin-bottom:16px;">
+          <div class="stat-icon si-orange"><svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></div>
+          <div class="stat-info"><div class="label">Total SLA</div><div class="value">1</div></div>
+        </div>
+        <div class="chart-grid">
+          <div class="chart-box wide">
+            <div class="chart-header"><span class="chart-title" style="font-size:12px;">Grafik Batang Penerimaan Per UT Daerah</span><button class="chart-btn">&#9776;</button></div>
+            <div class="chart-sub">Data yang ditaprikan dari realtime dan database temporer</div>
+            <canvas id="deliveryChart" height="160"></canvas>
+          </div>
+          <div class="chart-box narrow">
+            <div class="chart-header"><span class="chart-title" style="font-size:11px;">Pie Chart Penerimaan Per UT Daerah</span><button class="chart-btn">&#9776;</button></div>
+            <canvas id="deliveryPie" height="160"></canvas>
+          </div>
+        </div>
+        <div class="chart-grid">
+          <div class="chart-box wide">
+            <div class="chart-header"><span class="chart-title" style="font-size:12px;">Pie Chart Berdasarkan Jenis Penerimaan</span><button class="chart-btn">&#9776;</button></div>
+            <canvas id="recvPie" height="160"></canvas>
+          </div>
+          <div class="chart-box wide">
+            <div class="chart-header"><span class="chart-title" style="font-size:12px;">Grafik Batang Berdasarkan Jenis Penerimaan</span><button class="chart-btn">&#9776;</button></div>
+            <div class="chart-sub">Data yang ditaprikan dari realtime dan database temporer</div>
+            <canvas id="recvBar" height="160"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- REASON MONITORING -->
+      <div class="page" id="page-reason">
+        <div class="page-header"><h1>Reason Monitoring</h1><span class="breadcrumb">Reason Monitoring</span></div>
+        <div class="page-sub">Semester</div>
+        <select class="semester-select"><option>2025 Genap</option><option>2025 Ganjil</option><option>2024 Genap</option><option>2024 Ganjil</option><option>2023 Genap</option></select>
+        <div class="stat-card" style="max-width:300px;margin-bottom:16px;">
+          <div class="stat-icon si-teal"><svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 5v3h-7V8z"/></svg></div>
+          <div class="stat-info"><div class="label">Total DO</div><div class="value small">0 / 010244/15.1SR</div></div>
+        </div>
+        <div class="chart-grid">
+          <div class="chart-box wide">
+            <div class="chart-header"><span class="chart-title" style="font-size:12px;">Grafik Batang Alasan Retur Per UT Daerah</span><button class="chart-btn">&#9776;</button></div>
+            <canvas id="reasonBar" height="160"></canvas>
+          </div>
+          <div class="chart-box narrow">
+            <div class="chart-header"><span class="chart-title" style="font-size:11px;">Pie Chart Penerimaan Per UT Daerah</span><button class="chart-btn">&#9776;</button></div>
+            <canvas id="reasonPie" height="160"></canvas>
+          </div>
+        </div>
+        <div class="chart-grid">
+          <div class="chart-box wide">
+            <div class="chart-header"><span class="chart-title" style="font-size:12px;">Pie Chart Berdasarkan Jenis Penerimaan</span><button class="chart-btn">&#9776;</button></div>
+            <canvas id="reasonPie2" height="160"></canvas>
+          </div>
+          <div class="chart-box wide">
+            <div class="chart-header"><span class="chart-title" style="font-size:12px;">Grafik Batang Retur Berdasarkan Alasan</span><button class="chart-btn">&#9776;</button></div>
+            <canvas id="reasonBar2" height="160"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- ANALISA SLA -->
+      <div class="page" id="page-sla">
+        <h1 style="font-size:20px;font-weight:700;color:#1a6bb5;margin-bottom:4px;">Analisa SLA</h1>
+        <p style="font-size:12px;color:#718096;margin-bottom:12px;">Data yang ditampilkan sesuai dengan semester yang dipilih.</p>
+        <div style="font-size:12px;font-weight:700;color:#2d3748;margin-bottom:6px;">Semester</div>
+        <select class="semester-select"><option>2025 Genap</option><option>2025 Ganjil</option><option>2024 Genap</option><option>2024 Ganjil</option><option>2023 Genap</option></select>
+        <div class="section-header">Detail Pengiriman Pihak Ketiga</div>
+        <div style="margin-bottom:10px;"><button class="btn-excel">Import Excel</button></div>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead><tr><th>Pihak Ketiga</th><th>Total DO</th><th>Total Dalam Pengiriman</th><th>Total Terkirim Sesuai SLA</th><th>Total Terlambat</th></tr></thead>
+            <tbody>
+              <tr><td><div class="vendor-logo"><div class="vl-circle" style="background:#e53e3e;color:#fff;">L</div>LION PARCEL</div></td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+              <tr><td><div class="vendor-logo"><div class="vl-circle" style="background:#1a6bb5;color:#fff;">FL</div>PT. FIRST LOGISTIC</div></td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+              <tr><td><div class="vendor-logo"><div class="vl-circle" style="background:#f6ad55;color:#794a00;">I</div>INDAH LOGISTIK</div></td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+              <tr><td><div class="vendor-logo"><div class="vl-circle" style="background:#38a169;color:#fff;">JNE</div>PT. JNE</div></td><td>0</td><td>0</td><td>0</td><td>0</td></tr>
+              <tr><td><div class="vendor-logo"><div class="vl-circle" style="background:#805ad5;color:#fff;">P</div>POS LOGISTIC</div></td><td>0</td><td>0</td><td>0</td><td style="background:#1a6bb5;"></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div style="font-size:11px;color:#a0aec0;margin:8px 0 16px;">Showing 1 to 5 of 5 entries</div>
+        <div class="section-header">Aging SLA</div>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead><tr><th>Kota</th><th>Total DO</th><th>Sesuai SLA</th><th>1 - 3 Hari</th><th>4 - 6 Hari</th><th>7 - 9 Hari</th><th>&gt;= 10 Hari</th></tr></thead>
+            <tbody><tr><td colspan="7" style="text-align:center;color:#a0aec0;padding:20px;">Tidak ada data</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- CLIENT ORDER -->
+      <div class="page" id="page-client-order">
+        <div class="page-header"><h1>Client Order</h1><span class="breadcrumb">Transaction / Client Order</span></div>
+        <div class="chart-box" style="margin:16px 0;">
+          <div class="section-header" style="margin-bottom:12px;">Filter Data</div>
+          <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:8px;">
+            <div>
+              <div style="font-size:11px;font-weight:600;color:#4a5568;margin-bottom:4px;">Date Start</div>
+              <input type="date" value="2025-01-01" style="border:1px solid #d1d9e6;border-radius:6px;padding:5px 10px;font-size:12px;outline:none;">
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:600;color:#4a5568;margin-bottom:4px;">Date End</div>
+              <input type="date" value="2025-01-31" style="border:1px solid #d1d9e6;border-radius:6px;padding:5px 10px;font-size:12px;outline:none;">
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:6px;">
+              <button class="btn-primary">Filter</button>
+              <button class="btn-reset">Reset</button>
+            </div>
+          </div>
+          <div style="font-size:11px;color:#a0aec0;">This is Simple Filter if you wish, you could use an <span style="color:#1a6bb5;cursor:pointer;">Advanced Filter</span></div>
+        </div>
+        <div class="section-header">Data</div>
+        <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;align-items:center;">
+          <button class="btn-primary" style="padding:4px 12px;font-size:11px;">PDF</button>
+          <button class="btn-excel" style="padding:4px 12px;font-size:11px;">Excel</button>
+          <button style="border:1px solid #d1d9e6;background:#fff;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;">Column visibility &#9660;</button>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:6px;">
+            <label style="font-size:11px;color:#718096;">Search:</label>
+            <input style="border:1px solid #d1d9e6;border-radius:5px;padding:4px 8px;font-size:11px;outline:none;width:150px;" placeholder="">
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="data-table" style="min-width:900px;">
+            <thead>
+              <tr>
+                <th>Client Order Code &#8597;</th><th>Order Status &#8597;</th><th>Delivery Status &#8597;</th>
+                <th>Batch Code &#8597;</th><th>Vendor &#8597;</th><th>Airway Bill &#8597;</th>
+                <th>Date Order &#8597;</th><th>Load Time &#8597;</th><th>NIM &#8597;</th><th>Receiver Name &#8597;</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>20240503...</td><td><span class="badge badge-green">Do Done</span></td><td><span class="badge badge-blue">Delivered</span></td><td>sPnc</td><td>20...</td><td>20...</td><td>06:00:24</td><td>06:00:24</td><td>—</td><td>—</td></tr>
+              <tr><td>20240503...</td><td><span class="badge badge-green">Do Done</span></td><td><span class="badge badge-orange">Monitoring</span></td><td>sPnc</td><td>20...</td><td>20...</td><td>06:01:10</td><td>06:01:10</td><td>—</td><td>—</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- LEAD TIME -->
+      <div class="page" id="page-lead-time">
+        <div class="page-header"><h1>Lead Time</h1><span class="breadcrumb">Transaction / Lead Time</span></div>
+        <div class="chart-box" style="margin:16px 0;">
+          <div class="section-header" style="margin-bottom:12px;">Filter Data</div>
+          <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px;">
+            <div><div style="font-size:11px;font-weight:600;color:#4a5568;margin-bottom:4px;">Date Start</div><input type="date" value="2025-01-01" style="border:1px solid #d1d9e6;border-radius:6px;padding:5px 10px;font-size:12px;outline:none;"></div>
+            <div><div style="font-size:11px;font-weight:600;color:#4a5568;margin-bottom:4px;">Date End</div><input type="date" value="2025-01-31" style="border:1px solid #d1d9e6;border-radius:6px;padding:5px 10px;font-size:12px;outline:none;"></div>
+            <div style="display:flex;align-items:flex-end;gap:6px;"><button class="btn-primary">Filter</button><button class="btn-reset">Reset</button></div>
+          </div>
+          <div style="display:flex;gap:20px;flex-wrap:wrap;">
+            <div><div style="font-size:11px;font-weight:600;color:#4a5568;margin-bottom:4px;">Tanggal Awal Terkirim</div><input type="date" style="border:1px solid #d1d9e6;border-radius:6px;padding:5px 10px;font-size:12px;outline:none;"></div>
+            <div><div style="font-size:11px;font-weight:600;color:#4a5568;margin-bottom:4px;">Tanggal Terakhir Terkirim</div><input type="date" style="border:1px solid #d1d9e6;border-radius:6px;padding:5px 10px;font-size:12px;outline:none;"></div>
+          </div>
+          <div style="font-size:11px;color:#a0aec0;margin-top:10px;">This is Simple Filter if you wish, you could use an <span style="color:#1a6bb5;cursor:pointer;">Advanced Filter</span></div>
+        </div>
+        <div style="background:#1a6bb5;border-radius:8px;padding:8px 16px;text-align:center;color:#fff;font-size:12px;font-weight:600;margin-bottom:14px;cursor:pointer;">Expand</div>
+        <div class="stat-row">
+          <div class="stat-card"><div class="stat-icon si-green"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><div class="stat-info"><div class="label">Total DO</div><div class="value">2</div></div></div>
+          <div class="stat-card"><div class="stat-icon si-orange"><svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13" rx="1"/></svg></div><div class="stat-info"><div class="label">Total Customer</div><div class="value">30</div></div></div>
+          <div class="stat-card"><div class="stat-icon si-blue"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><div class="stat-info"><div class="label">Terkirim Sesuai SLA</div><div class="value">15</div></div></div>
+          <div class="stat-card"><div class="stat-icon si-red"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg></div><div class="stat-info"><div class="label">Belum Terkirim SLA</div><div class="value">856</div></div></div>
+        </div>
+        <div class="section-header" style="margin-top:16px;">Data</div>
+        <div style="color:#a0aec0;font-size:12px;padding:20px;text-align:center;">Pilih filter dan klik tombol Filter untuk menampilkan data.</div>
+      </div>
+
+      <!-- TRACKING DELIVERY -->
+      <div class="page" id="page-tracking">
+        <div class="page-header"><h1>Tracking Delivery</h1><span class="breadcrumb">Transaction / Tracking Delivery</span></div>
+        <p style="font-size:12px;color:#718096;margin:8px 0 16px;">Create your transaction and fill the form.</p>
+        <div class="tracking-form">
+          <label style="font-size:12px;font-weight:600;color:#4a5568;display:block;margin-bottom:6px;">Code / Airway Bill / Client Order Code</label>
+          <select style="width:100%;border:1px solid #d1d9e6;border-radius:6px;padding:8px 10px;font-size:12px;outline:none;margin-bottom:8px;"><option>Select Order</option></select>
+          <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;overflow:hidden;">
+            <div style="padding:8px 12px;font-size:11px;color:#a0aec0;">Searching...</div>
+            <div class="tracking-option">20240503151906171472434904475 - Kylee Luetvwitz</div>
+            <div class="tracking-option">20240503151906171472434903641 - Prof. Amy Lehrer II</div>
+            <div class="tracking-option">20240503190617147243469548 - Prof. Uran Kassukle</div>
+            <div class="tracking-option">20240503190717147243470S439 - Mrs. Caleigh Lind II</div>
+            <div class="tracking-option">20240503190717147243470S777 - Ms. Catherine Huellan III</div>
+            <div class="tracking-option">20240503193071714724347058631 - Cordelia Wiesand...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- HISTORY -->
+      <div class="page" id="page-history">
+        <div class="page-header"><h1>History</h1><span class="breadcrumb">Setting / History</span></div>
+        <div class="chart-box" style="margin-top:16px;text-align:center;padding:40px 20px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#d1d9e6" stroke-width="1.5" width="48" height="48"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/></svg>
+          <div style="font-size:13px;color:#a0aec0;margin-top:8px;">Belum ada riwayat aktivitas</div>
+        </div>
+      </div>
+
+    </div><!-- /.main -->
+  </div><!-- /.layout -->
+</div><!-- /#dashboardApp -->
+
+<script>
+// ===== LOGIN =====
+var eyeVisible = false;
+function togglePass() {
+  eyeVisible = !eyeVisible;
+  document.getElementById('pass').type = eyeVisible ? 'text' : 'password';
+  document.getElementById('eyeIcon').innerHTML = eyeVisible
+    ? '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>'
+    : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+}
+
+function doLogin() {
+  var u = document.getElementById('uname').value.trim();
+  var p = document.getElementById('pass').value;
+  var err = document.getElementById('errMsg');
+  var btn = document.getElementById('loginBtn');
+  var btnText = document.getElementById('btnText');
+  var dots = document.getElementById('dots');
+  err.classList.remove('show');
+  if (!u || !p) {
+    document.getElementById('errText').textContent = 'Username dan password tidak boleh kosong.';
+    err.classList.add('show'); return;
+  }
+  btn.disabled = true; btnText.textContent = 'Memproses...'; dots.style.display = 'inline-flex';
+  setTimeout(function() {
+    btn.disabled = false; btnText.textContent = 'Masuk'; dots.style.display = 'none';
+    if (u === 'admin' && p === 'admin123') {
+      document.getElementById('loginPage').style.display = 'none';
+      document.getElementById('dashboardApp').style.display = 'flex';
+      initCharts();
+    } else {
+      document.getElementById('errText').textContent = 'Username atau password salah. Demo: admin / admin123';
+      err.classList.add('show');
+    }
+  }, 1500);
+}
+
+function doLogout() {
+  if (confirm('Yakin ingin keluar?')) {
+    document.getElementById('dashboardApp').style.display = 'none';
+    document.getElementById('loginPage').style.display = 'flex';
+    document.getElementById('uname').value = '';
+    document.getElementById('pass').value = '';
+    document.getElementById('errMsg').classList.remove('show');
+  }
+}
+
+// ===== NAVIGATION =====
+function showPage(id, el, title) {
+  document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
+  document.querySelectorAll('.menu-item').forEach(function(m){ m.classList.remove('active'); });
+  var pg = document.getElementById('page-' + id);
+  if (pg) pg.classList.add('active');
+  el.classList.add('active');
+  document.getElementById('topTitle').textContent = title;
+}
+
+// ===== CHARTS =====
+var chartsInit = false;
+function initCharts() {
+  if (chartsInit) return;
+  chartsInit = true;
+
+  // DO By Date
+  new Chart(document.getElementById('doChart'), {
+    type: 'line',
+    data: {
+      labels: ['Dec 10','Dec 12','Dec 16','Dec 18','Jan 2','Jan 6','Jan 8','Jan 12','Jan 14','Jan 16','Jan 20'],
+      datasets: [{
+        label: 'DO', fill: true,
+        data: [20,22,8,9,11,15,125,128,122,164,75],
+        borderColor: '#1a6bb5', backgroundColor: 'rgba(26,107,181,0.08)',
+        tension: 0.35, pointRadius: 3, borderWidth: 2
+      }]
+    },
+    options: { plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true,grid:{color:'#f0f2f5'},ticks:{font:{size:10}}},x:{grid:{display:false},ticks:{font:{size:9}}}}, maintainAspectRatio: true, responsive: true }
+  });
+
+  // Stock Per Paket
+  new Chart(document.getElementById('stockChart'), {
+    type: 'bar',
+    data: {
+      labels: ['MTPD1_JK1S','MTPD1_JK2S','MTPD1_JK3S','MTPD1_JK4S','MTPD1_JK5S','MTPD1_JK6S','MTPD1_JK7S','MTPD1_JK8S','MTPD1_JK9S','MTPD1_JK10S','MTPD1_JK11S','MTPD1_JK12S','MTPD1_JK13S','MTPD1_JK14S','MTPD1_JK15S','MTPD1_JK16S'],
+      datasets: [{ label:'Stok', data:[4371,0,2148,0,1269,1292,0,323,540,1085,1116,1217,380,0,415,0], backgroundColor:'#1a6bb5', borderRadius:3 }]
+    },
+    options: { plugins:{legend:{display:false}}, scales:{y:{ticks:{font:{size:9}}},x:{ticks:{font:{size:8},maxRotation:90}}}, responsive:true }
+  });
+
+  // Perbandingan DO vs Ongoing
+  new Chart(document.getElementById('compareChart'), {
+    type: 'bar',
+    data: {
+      labels: ['DO Dalam Jaringan','Di Kirim Adm. Buku','Di Kirim Penerima'],
+      datasets: [
+        { label:'Realisasi DO', data:[800,741,14], backgroundColor:'#1a6bb5', borderRadius:3 },
+        { label:'Ongoing Bayar', data:[1000,0,0], backgroundColor:'#a0c4e8', borderRadius:3 }
+      ]
+    },
+    options: { plugins:{legend:{display:true,labels:{font:{size:9}}}}, scales:{y:{ticks:{font:{size:9}}},x:{ticks:{font:{size:8}}}}, responsive:true }
+  });
+
+  // Stock Item
+  new Chart(document.getElementById('itemChart'), {
+    type: 'bar',
+    data: {
+      labels: ['A204K1','A204K17','A204K2','A204K3','A204K4','A204K5','A204K6','A204K60','A204K7','A204K8','A204K9','A204K40','A204K41'],
+      datasets: [{ label:'Stok', data:[30,450,60,120,90,20,380,410,300,15,5,40,620], backgroundColor:'#e53e3e', borderRadius:3, indexAxis:'y' }]
+    },
+    options: { indexAxis:'y', plugins:{legend:{display:false}}, scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:9}}}}, responsive:true }
+  });
+
+  // Vendor Chart
+  new Chart(document.getElementById('vendorChart'), {
+    type: 'bar',
+    data: {
+      labels: ['LION PARCEL','PT. FIRST LOGISTIC','INDAH LOGISTIK','PT. JNE','POS LOGISTIC'],
+      datasets: [{ data:[234,180,95,320,214], backgroundColor:['#f6ad55','#1a6bb5','#38a169','#e53e3e','#805ad5'], borderRadius:3 }]
+    },
+    options: { indexAxis:'y', plugins:{legend:{display:false}}, scales:{x:{ticks:{font:{size:9}}},y:{ticks:{font:{size:9}}}}, responsive:true }
+  });
+
+  // Delivery Bar
+  new Chart(document.getElementById('deliveryChart'), {
+    type: 'bar',
+    data: {
+      labels: ['UT MARES','UT BANDA ACH','UT BANDAR JAJUNG','UT BANDUNG','UT BANJARMAIN','UT BIMA','UT BENGKULU','UT BOGOR','UT DENPASAR'],
+      datasets: [{ label:'Penerimaan', data:[2,1,24,0,15,16,1,0,15], backgroundColor:'#1a6bb5', borderRadius:3 }]
+    },
+    options: { plugins:{legend:{display:false}}, scales:{y:{ticks:{font:{size:9}}},x:{ticks:{font:{size:8},maxRotation:45}}}, responsive:true }
+  });
+
+  // Delivery Pie
+  new Chart(document.getElementById('deliveryPie'), {
+    type: 'pie',
+    data: {
+      labels: ['UT YOGYAKARTA','UT JAKARTA','UT MALANG','UT BOGOR','UT SURABAYA','Lainnya'],
+      datasets: [{ data:[4.4,23.5,4.5,6.5,7.7,53.4], backgroundColor:['#1a6bb5','#38a169','#f6ad55','#e53e3e','#805ad5','#e2e8f0'] }]
+    },
+    options: { plugins:{legend:{display:true,labels:{font:{size:9},boxWidth:10}}}, responsive:true }
+  });
+
+  // Recv Pie
+  new Chart(document.getElementById('recvPie'), {
+    type: 'pie',
+    data: {
+      labels: ['Diterima Langsung','Diterima Orang Serumah','Diterima Satpam','Diterima Petugas Maks','Diterima Resepsionis','Security','Keluarga/Saudara','Atasan/Staf','Yang Bersangkutan'],
+      datasets: [{ data:[14.4,30.7,1.2,0.7,0.5,6.4,1.2,8.8,2.6], backgroundColor:['#1a6bb5','#38a169','#f6ad55','#e53e3e','#805ad5','#2c7a7b','#c05621','#d69e2e','#a0c4e8'] }]
+    },
+    options: { plugins:{legend:{display:true,labels:{font:{size:9},boxWidth:10}}}, responsive:true }
+  });
+
+  // Recv Bar
+  new Chart(document.getElementById('recvBar'), {
+    type: 'bar',
+    data: {
+      labels: ['Yang Bersangkutan','Diterima Org Serumah','Satpam','Resepsionis','Petugas Maks','Security','Keluarga','Atasan','Lainnya'],
+      datasets: [{ data:[687,542,52,36,29,1,3,4,12], backgroundColor:'#1a6bb5', borderRadius:3 }]
+    },
+    options: { plugins:{legend:{display:false}}, scales:{y:{ticks:{font:{size:9}}},x:{ticks:{font:{size:8},maxRotation:45}}}, responsive:true }
+  });
+
+  // Reason Bar
+  new Chart(document.getElementById('reasonBar'), {
+    type: 'bar',
+    data: {
+      labels: ['1','2','3','4','5','6','7','8'],
+      datasets: [{ label:'Alasan Retur', data:[0,0,0,0,0,0,0,0], backgroundColor:'#1a6bb5', borderRadius:3 }]
+    },
+    options: { plugins:{legend:{display:false}}, scales:{y:{ticks:{font:{size:9}}},x:{ticks:{font:{size:9}}}}, responsive:true }
+  });
+
+  // Reason Pie
+  new Chart(document.getElementById('reasonPie'), {
+    type: 'doughnut',
+    data: { labels:['Data'], datasets:[{ data:[1], backgroundColor:['#e2e8f0'] }] },
+    options: { plugins:{legend:{display:false}}, responsive:true }
+  });
+
+  // Reason Pie 2
+  new Chart(document.getElementById('reasonPie2'), {
+    type: 'doughnut',
+    data: { labels:['Data'], datasets:[{ data:[1], backgroundColor:['#e2e8f0'] }] },
+    options: { plugins:{legend:{display:false}}, responsive:true }
+  });
+
+  // Reason Bar 2
+  new Chart(document.getElementById('reasonBar2'), {
+    type: 'bar',
+    data: {
+      labels: ['Alasan 1','Alasan 2','Alasan 3','Alasan 4'],
+      datasets: [{ data:[0,0,0,0], backgroundColor:'#e53e3e', borderRadius:3 }]
+    },
+    options: { plugins:{legend:{display:false}}, scales:{y:{ticks:{font:{size:9}}},x:{ticks:{font:{size:9}}}}, responsive:true }
+  });
+}
+</script>
+</body>
+</html>
