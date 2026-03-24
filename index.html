@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>PARAMITA - Distribution Monitoring System</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #2d3748; background: #f0f2f5; }
@@ -480,16 +482,37 @@ canvas { max-width: 100%; }
         <div class="page-header"><h1>Distribution Map</h1><span class="breadcrumb">Distribution Map</span></div>
         <div class="page-sub">Semester</div>
         <select class="semester-select"><option>2025 Genap</option><option>2025 Ganjil</option><option>2024 Genap</option><option>2024 Ganjil</option><option>2023 Genap</option></select>
-        <div style="background:#dce8f0;border:1px solid #c4d8e8;border-radius:10px;height:320px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;">
-          <div style="text-align:center;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#1a6bb5" stroke-width="1.5" width="48" height="48"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-            <div style="font-size:13px;font-weight:600;color:#4a5568;margin-top:8px;">Peta Distribusi Indonesia</div>
-            <div style="font-size:11px;color:#718096;margin-top:4px;">Data sebaran pengiriman per provinsi</div>
+        <div id="mapDistribusi" style="height:380px;border-radius:10px;border:1px solid #d1d9e6;margin-bottom:14px;z-index:1;"></div>
+        <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+          <div class="chart-box" style="flex:1;min-width:200px;">
+            <div class="section-header">List Provinsi</div>
+            <div id="listProvinsi" style="max-height:200px;overflow-y:auto;font-size:12px;"></div>
+          </div>
+          <div class="chart-box" style="flex:1;min-width:200px;">
+            <div class="section-header">List Kota</div>
+            <div id="listKota" style="max-height:200px;overflow-y:auto;font-size:12px;"></div>
           </div>
         </div>
-        <div style="display:flex;gap:12px;">
-          <div class="chart-box" style="flex:1;"><div class="chart-title" style="font-size:13px;font-weight:600;">List Provinsi</div></div>
-          <div class="chart-box" style="flex:1;"><div class="chart-title" style="font-size:13px;font-weight:600;">List Kota</div></div>
+        <div class="chart-box" style="margin-bottom:14px;">
+          <div class="section-header">Kelola Data Titik Pengiriman</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+            <input id="inp-nama" placeholder="Nama Kota/UT" style="border:1px solid #d1d9e6;border-radius:6px;padding:6px 10px;font-size:12px;outline:none;flex:1;min-width:120px;">
+            <input id="inp-provinsi" placeholder="Provinsi" style="border:1px solid #d1d9e6;border-radius:6px;padding:6px 10px;font-size:12px;outline:none;flex:1;min-width:100px;">
+            <input id="inp-lat" placeholder="Latitude (cth: -6.2)" style="border:1px solid #d1d9e6;border-radius:6px;padding:6px 10px;font-size:12px;outline:none;width:170px;">
+            <input id="inp-lng" placeholder="Longitude (cth: 106.8)" style="border:1px solid #d1d9e6;border-radius:6px;padding:6px 10px;font-size:12px;outline:none;width:170px;">
+            <input id="inp-jumlah" placeholder="Jumlah Paket" type="number" style="border:1px solid #d1d9e6;border-radius:6px;padding:6px 10px;font-size:12px;outline:none;width:130px;">
+            <button class="btn-primary" onclick="tambahTitik()">+ Tambah</button>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="data-table" id="tabelTitik">
+              <thead><tr><th>#</th><th>Nama</th><th>Provinsi</th><th>Latitude</th><th>Longitude</th><th>Jml Paket</th><th>Aksi</th></tr></thead>
+              <tbody id="bodyTitik"></tbody>
+            </table>
+          </div>
+          <div style="margin-top:10px;display:flex;gap:8px;">
+            <button class="btn-primary" onclick="simpanDanRefreshPeta()">Simpan &amp; Refresh Peta</button>
+            <button style="border:1px solid #d1d9e6;background:#fff;border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;" onclick="exportKoordinat()">Export JSON</button>
+          </div>
         </div>
       </div>
 
@@ -511,11 +534,8 @@ canvas { max-width: 100%; }
               <span style="font-size:10px;display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#805ad5;border-radius:2px;display:inline-block;"></span>POS LOGISTIC</span>
             </div>
           </div>
-          <div class="chart-box narrow" style="background:#dce8f0;display:flex;align-items:center;justify-content:center;">
-            <div style="text-align:center;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#1a6bb5" stroke-width="1.5" width="36" height="36"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-              <div style="font-size:11px;color:#718096;margin-top:6px;">Peta Vendor</div>
-            </div>
+          <div class="chart-box narrow" style="padding:0;overflow:hidden;min-height:300px;">
+            <div id="mapVendor" style="height:300px;border-radius:0 10px 10px 0;z-index:1;"></div>
           </div>
         </div>
       </div>
@@ -776,6 +796,9 @@ function showPage(id, el, title) {
   if (pg) pg.classList.add('active');
   el.classList.add('active');
   document.getElementById('topTitle').textContent = title;
+  if (id === 'dist-map' || id === 'dist-vendor') {
+    setTimeout(function(){ initPeta(); }, 100);
+  }
 }
 
 // ===== CHARTS =====
@@ -915,6 +938,189 @@ function initCharts() {
     },
     options: { plugins:{legend:{display:false}}, scales:{y:{ticks:{font:{size:9}}},x:{ticks:{font:{size:9}}}}, responsive:true }
   });
+}
+
+// ===== DATA KOORDINAT (DUMMY) =====
+var dataTitik = [
+  { nama:'UT Jakarta', provinsi:'DKI Jakarta', lat:-6.2088, lng:106.8456, jumlah:320 },
+  { nama:'UT Bandung', provinsi:'Jawa Barat', lat:-6.9175, lng:107.6191, jumlah:215 },
+  { nama:'UT Surabaya', provinsi:'Jawa Timur', lat:-7.2575, lng:112.7521, jumlah:198 },
+  { nama:'UT Yogyakarta', provinsi:'DI Yogyakarta', lat:-7.7956, lng:110.3695, jumlah:143 },
+  { nama:'UT Semarang', provinsi:'Jawa Tengah', lat:-6.9932, lng:110.4203, jumlah:167 },
+  { nama:'UT Medan', provinsi:'Sumatera Utara', lat:3.5952, lng:98.6722, jumlah:112 },
+  { nama:'UT Palembang', provinsi:'Sumatera Selatan', lat:-2.9761, lng:104.7754, jumlah:89 },
+  { nama:'UT Makassar', provinsi:'Sulawesi Selatan', lat:-5.1477, lng:119.4327, jumlah:94 },
+  { nama:'UT Denpasar', provinsi:'Bali', lat:-8.6705, lng:115.2126, jumlah:76 },
+  { nama:'UT Pontianak', provinsi:'Kalimantan Barat', lat:-0.0263, lng:109.3425, jumlah:58 },
+  { nama:'UT Banjarmasin', provinsi:'Kalimantan Selatan', lat:-3.3194, lng:114.5908, jumlah:62 },
+  { nama:'UT Samarinda', provinsi:'Kalimantan Timur', lat:-0.5022, lng:117.1536, jumlah:47 },
+  { nama:'UT Manado', provinsi:'Sulawesi Utara', lat:1.4748, lng:124.8421, jumlah:39 },
+  { nama:'UT Jayapura', provinsi:'Papua', lat:-2.5916, lng:140.6690, jumlah:28 },
+  { nama:'UT Kupang', provinsi:'Nusa Tenggara Timur', lat:-10.1771, lng:123.6070, jumlah:35 },
+  { nama:'UT Mataram', provinsi:'Nusa Tenggara Barat', lat:-8.5833, lng:116.1167, jumlah:51 },
+  { nama:'UT Banda Aceh', provinsi:'Aceh', lat:5.5483, lng:95.3238, jumlah:44 },
+  { nama:'UT Padang', provinsi:'Sumatera Barat', lat:-0.9471, lng:100.4172, jumlah:67 },
+  { nama:'UT Pekanbaru', provinsi:'Riau', lat:0.5071, lng:101.4478, jumlah:55 },
+  { nama:'UT Bogor', provinsi:'Jawa Barat', lat:-6.5971, lng:106.8060, jumlah:130 }
+];
+
+var vendorColors = {
+  'LION PARCEL': '#f6ad55',
+  'PT. FIRST LOGISTIC': '#1a6bb5',
+  'INDAH LOGISTIK': '#38a169',
+  'PT. JNE': '#e53e3e',
+  'POS LOGISTIC': '#805ad5'
+};
+var vendorList = Object.keys(vendorColors);
+
+// Assign vendor dummy ke tiap titik
+dataTitik.forEach(function(d, i) { d.vendor = vendorList[i % vendorList.length]; });
+
+var mapDistribusi = null;
+var mapVendor = null;
+var markersDistribusi = [];
+var markersVendor = [];
+
+function buatIconLingkaran(warna, ukuran) {
+  return L.divIcon({
+    className: '',
+    html: '<div style="width:'+ukuran+'px;height:'+ukuran+'px;border-radius:50%;background:'+warna+';border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;font-weight:700;"></div>',
+    iconSize: [ukuran, ukuran],
+    iconAnchor: [ukuran/2, ukuran/2],
+    popupAnchor: [0, -ukuran/2]
+  });
+}
+
+function initPeta() {
+  // Peta Distribusi
+  if (!mapDistribusi) {
+    mapDistribusi = L.map('mapDistribusi').setView([-2.5, 118.0], 5);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors', maxZoom: 18
+    }).addTo(mapDistribusi);
+  }
+  renderPetaDistribusi();
+  renderTabelTitik();
+  renderListProvinsiKota();
+
+  // Peta Vendor
+  if (!mapVendor) {
+    mapVendor = L.map('mapVendor').setView([-2.5, 118.0], 4);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors', maxZoom: 18
+    }).addTo(mapVendor);
+  }
+  renderPetaVendor();
+
+  setTimeout(function(){
+    if(mapDistribusi) mapDistribusi.invalidateSize();
+    if(mapVendor) mapVendor.invalidateSize();
+  }, 300);
+}
+
+function renderPetaDistribusi() {
+  markersDistribusi.forEach(function(m){ mapDistribusi.removeLayer(m); });
+  markersDistribusi = [];
+  dataTitik.forEach(function(d) {
+    var ukuran = Math.max(18, Math.min(40, Math.round(d.jumlah / 15)));
+    var marker = L.marker([d.lat, d.lng], { icon: buatIconLingkaran('#1a6bb5', ukuran) })
+      .addTo(mapDistribusi)
+      .bindPopup('<b>'+d.nama+'</b><br>'+d.provinsi+'<br>Paket: <b>'+d.jumlah+'</b>');
+    markersDistribusi.push(marker);
+  });
+}
+
+function renderPetaVendor() {
+  markersVendor.forEach(function(m){ mapVendor.removeLayer(m); });
+  markersVendor = [];
+  dataTitik.forEach(function(d) {
+    var warna = vendorColors[d.vendor] || '#718096';
+    var marker = L.marker([d.lat, d.lng], { icon: buatIconLingkaran(warna, 22) })
+      .addTo(mapVendor)
+      .bindPopup('<b>'+d.nama+'</b><br>Vendor: <b>'+d.vendor+'</b><br>Paket: <b>'+d.jumlah+'</b>');
+    markersVendor.push(marker);
+  });
+}
+
+function renderTabelTitik() {
+  var tbody = document.getElementById('bodyTitik');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  dataTitik.forEach(function(d, i) {
+    tbody.innerHTML += '<tr>'
+      +'<td>'+(i+1)+'</td>'
+      +'<td>'+d.nama+'</td>'
+      +'<td>'+d.provinsi+'</td>'
+      +'<td>'+d.lat+'</td>'
+      +'<td>'+d.lng+'</td>'
+      +'<td>'+d.jumlah+'</td>'
+      +'<td><button onclick="hapusTitik('+i+')" style="background:#fff5f5;color:#e53e3e;border:1px solid #fed7d7;border-radius:4px;padding:2px 8px;font-size:11px;cursor:pointer;">Hapus</button></td>'
+      +'</tr>';
+  });
+}
+
+function renderListProvinsiKota() {
+  var provinsiSet = {};
+  dataTitik.forEach(function(d) {
+    if (!provinsiSet[d.provinsi]) provinsiSet[d.provinsi] = 0;
+    provinsiSet[d.provinsi] += d.jumlah;
+  });
+  var lpEl = document.getElementById('listProvinsi');
+  var lkEl = document.getElementById('listKota');
+  if (lpEl) {
+    lpEl.innerHTML = Object.keys(provinsiSet).sort().map(function(p) {
+      return '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f0f2f5;">'
+        +'<span>'+p+'</span><span style="font-weight:600;color:#1a6bb5;">'+provinsiSet[p]+'</span></div>';
+    }).join('');
+  }
+  if (lkEl) {
+    lkEl.innerHTML = dataTitik.slice().sort(function(a,b){return b.jumlah-a.jumlah;}).map(function(d) {
+      return '<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid #f0f2f5;">'
+        +'<span>'+d.nama+'</span><span style="font-weight:600;color:#1a6bb5;">'+d.jumlah+'</span></div>';
+    }).join('');
+  }
+}
+
+function tambahTitik() {
+  var nama = document.getElementById('inp-nama').value.trim();
+  var prov = document.getElementById('inp-provinsi').value.trim();
+  var lat  = parseFloat(document.getElementById('inp-lat').value);
+  var lng  = parseFloat(document.getElementById('inp-lng').value);
+  var jml  = parseInt(document.getElementById('inp-jumlah').value) || 0;
+  if (!nama || !prov || isNaN(lat) || isNaN(lng)) {
+    alert('Nama, Provinsi, Latitude, dan Longitude wajib diisi dengan benar.'); return;
+  }
+  dataTitik.push({ nama:nama, provinsi:prov, lat:lat, lng:lng, jumlah:jml, vendor: vendorList[dataTitik.length % vendorList.length] });
+  document.getElementById('inp-nama').value = '';
+  document.getElementById('inp-provinsi').value = '';
+  document.getElementById('inp-lat').value = '';
+  document.getElementById('inp-lng').value = '';
+  document.getElementById('inp-jumlah').value = '';
+  renderTabelTitik();
+  alert('Titik ditambahkan. Klik "Simpan & Refresh Peta" untuk memperbarui peta.');
+}
+
+function hapusTitik(i) {
+  if (confirm('Hapus titik "'+dataTitik[i].nama+'"?')) {
+    dataTitik.splice(i, 1);
+    renderTabelTitik();
+  }
+}
+
+function simpanDanRefreshPeta() {
+  renderPetaDistribusi();
+  renderPetaVendor();
+  renderListProvinsiKota();
+  alert('Peta berhasil diperbarui!');
+}
+
+function exportKoordinat() {
+  var json = JSON.stringify(dataTitik, null, 2);
+  var blob = new Blob([json], {type:'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'koordinat-distribusi.json';
+  a.click();
 }
 </script>
 </body>
